@@ -2,12 +2,13 @@ package projet;
 
 import jade.core.AID;
 import jade.core.Agent;
+import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 
-public class Coureur extends Agent{
+public class Coureur extends Agent {
 	int energie;
 	int fatigue;
 	int hydratation;
@@ -16,53 +17,69 @@ public class Coureur extends Agent{
 	int puissanceMax;
 	char type;
 	int vitesseNormale;
+	int km = 0;
 	int lieu;
-	
-	public Coureur(){
-		int r = (Math.random()<0.5)?0:1;
-		if(r==0)
-			type='s';
-		if(r==1)
-			type='g';
-		this.lieu=0;
+
+	public Coureur() {
+		int r = (Math.random() < 0.5) ? 0 : 1;
+		if (r == 0)
+			type = 's';
+		if (r == 1)
+			type = 'g';
+		this.lieu = 0;
 	}
-	
-	protected void setup(){
+
+	protected void setup() {
 		addBehaviour(new subscribeBehaviour());
+		addBehaviour(new getPente());
 	}
-	
-	/*public void step(SimState arg0){
-		fatigue++;
-		energie--;
-		hydratation--;
-		boire();
-		manger();
-		int p = getPente();
-		int c = getConsigne();
-		majVitesse(p, c);
-	}*/
-	
-	private class subscribeBehaviour extends OneShotBehaviour{
+
+	/*
+	 * public void step(SimState arg0){ fatigue++; energie--; hydratation--;
+	 * boire(); manger(); int p = getPente(); int c = getConsigne();
+	 * majVitesse(p, c); }
+	 */
+
+	private class subscribeBehaviour extends OneShotBehaviour {
 		@Override
 		public void action() {
 			ACLMessage message = new ACLMessage(ACLMessage.SUBSCRIBE);
-			message.addReceiver(new AID("WORLD",AID.ISLOCALNAME));
+			message.addReceiver(new AID("WORLD", AID.ISLOCALNAME));
 			send(message);
 		}
 	}
-	
-	private class getPente extends CyclicBehaviour{
+
+	private class getPente extends Behaviour{
+		int step=0;
 		@Override
 		public void action(){
-			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
-			ACLMessage message = receive(mt);
-			if(message != null){
-				String s = message.getContent();
-				int pente = Integer.parseInt(s);
-				majVitesseP(pente);
-			} else {
-				block();
-			}
+			if(step==0){
+				ACLMessage message = new ACLMessage(ACLMessage.REQUEST);
+				message.addReceiver(new AID("WORLD",AID.ISLOCALNAME));
+				message.setContent(""+km);
+				message.addReplyTo(getAID());
+				send(message);
+				System.out.println("coureur sent:"+message.getContent());
+				step++;
+			}else if(step==1){
+				MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
+				ACLMessage message = receive(mt);
+				if(message != null){
+					String s = message.getContent();
+					System.out.println("coureur received:"+s);
+					int pente = Integer.parseInt(s);
+					majVitesseP(pente);
+					step--;
+					km++;
+				}else
+					block();
+			} 
+			
+		}
+		@Override
+		public boolean done() {
+			
+			return km>10;
 		}
 	}
 	
