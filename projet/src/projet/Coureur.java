@@ -45,6 +45,9 @@ public class Coureur extends Agent {
 			ACLMessage message = new ACLMessage(ACLMessage.SUBSCRIBE);
 			message.addReceiver(new AID("WORLD", AID.ISLOCALNAME));
 			send(message);
+			ACLMessage messageManager = new ACLMessage(ACLMessage.SUBSCRIBE);
+			messageManager.addReceiver(new AID(man,AID.ISLOCALNAME));
+			send(messageManager);
 		}
 	}
 	
