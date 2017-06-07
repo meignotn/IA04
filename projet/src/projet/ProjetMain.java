@@ -19,7 +19,7 @@ public class ProjetMain {
 			cc = rt.createAgentContainer(p);
 			AgentController ac = cc.createNewAgent("WORLD", "projet.RaceWorld", null);
 			ac.start();
-			for(int i =0;i<10;i++){
+			for(int i =0;i<1;i++){
 				ac = cc.createNewAgent("C"+i, "projet.Coureur", null);
 				ac.start();
 			}

@@ -79,7 +79,7 @@ public class AgentManager extends Agent{
     					e.printStackTrace();
     				}
     				runners.add(newRunner);
-    				if(newRunner.isLeader())
+    				if(newRunner.leader)
     					leader = runners.indexOf(newRunner);
     			}
     		}
@@ -166,7 +166,7 @@ public class ManageRaceBehaviour extends Behaviour{
 	public void action() {
 		for(Coureur r : runners){
 			ACLMessage aclMessage =new ACLMessage(ACLMessage.REQUEST);
-			AID aidReceiver = r.getAid();
+			AID aidReceiver = r.getAID();
 			aclMessage.addReceiver(aidReceiver);
 			aclMessage.setContent("40");
 		}
