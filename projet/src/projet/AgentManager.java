@@ -49,7 +49,7 @@ public class AgentManager extends Agent{
 
 		ManageTeamBehaviour(){
 			addSubBehaviour(new WaitRunnersBehaviour());
-			addSubBehaviour(new WaitCarBehaviour());
+//			addSubBehaviour(new WaitCarBehaviour());
 			addSubBehaviour(new TeamIsReadyBehaviour());
 			addSubBehaviour(new WaitForStartBehaviour());
 			addSubBehaviour(new ManageRaceBehaviour());
@@ -65,7 +65,7 @@ public class AgentManager extends Agent{
     	public void action() {
 			System.out.println("WAITING FOR RUNNERS");
 			
-			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
+			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.SUBSCRIBE);
 			ACLMessage message = myAgent.receive(mt);
     		if(message != null){
     			if(message.getContent().equals("subscribeRunner")){

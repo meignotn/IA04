@@ -34,9 +34,9 @@ public class Coureur extends Agent {
 	
 	protected void setup() {
 		addBehaviour(new subscribeBehaviour());
-		addBehaviour(new receiveInfo());
-		addBehaviour(new getPente());
-		addBehaviour(new getNextSupplies());
+//		addBehaviour(new receiveInfo());
+//		addBehaviour(new getPente());
+//		addBehaviour(new getNextSupplies());
 	}
 	
 	private class subscribeBehaviour extends OneShotBehaviour {
