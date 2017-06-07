@@ -19,8 +19,17 @@ public class ProjetMain {
 			cc = rt.createAgentContainer(p);
 			AgentController ac = cc.createNewAgent("WORLD", "projet.RaceWorld", null);
 			ac.start();
-			for(int i =0;i<1;i++){
-				ac = cc.createNewAgent("C"+i, "projet.Coureur", null);
+			AgentController ac1 = cc.createNewAgent("MAN1", "projet.AgentManager", null);
+			AgentController ac2 = cc.createNewAgent("MAN2", "projet.AgentManager", null);
+			ac1.start();
+			ac2.start();
+
+			for(int i =0;i<5;i++){
+				ac = cc.createNewAgent("C"+i, "projet.Coureur",new String[]{"MAN1"} );
+				ac.start();
+			}
+			for(int i =0;i<5;i++){
+				ac = cc.createNewAgent("C"+i, "projet.Coureur",new String[]{"MAN2"} );
 				ac.start();
 			}
 			ac.start();

@@ -35,7 +35,6 @@ public class AgentManager extends Agent{
 	
 	protected void setup() {
 		dfRegister("AgentManager","AgentManager");
-				
 		System.out.println(this.getAID());
 		addBehaviour(new ManageTeamBehaviour());
 		

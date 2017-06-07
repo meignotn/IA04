@@ -19,10 +19,11 @@ public class Coureur extends Agent {
 	int vitesseNormale;
 	int km = 0;
 	public boolean leader = false;
-	
+	String man;
 	int lieu;
 
-	public Coureur() {
+	public Coureur(String man) {
+		this.man=man;
 		int r = (Math.random() < 0.5) ? 0 : 1;
 		if (r == 0)
 			type = 's';
@@ -46,6 +47,7 @@ public class Coureur extends Agent {
 			send(message);
 		}
 	}
+	
 
 	private class receiveInfo extends CyclicBehaviour {
 
