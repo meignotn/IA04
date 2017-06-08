@@ -77,6 +77,7 @@ public class AgentManager extends Agent{
     					// TODO Auto-generated catch block
     					e.printStackTrace();
     				}
+    				System.out.println("Runner suscribed for team"+getLocalName()+":"+newRunner.getAID());
     				runners.add(newRunner);
     				if(newRunner.leader)
     					leader = runners.indexOf(newRunner);

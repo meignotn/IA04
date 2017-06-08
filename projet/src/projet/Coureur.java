@@ -1,8 +1,13 @@
 package projet;
 
+import java.io.IOException;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import jade.core.AID;
 import jade.core.Agent;
-import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.CyclicBehaviour;
 import jade.core.behaviours.OneShotBehaviour;
 import jade.lang.acl.ACLMessage;
@@ -22,8 +27,7 @@ public class Coureur extends Agent {
 	String man;
 	int lieu;
 
-	public Coureur(String man) {
-		this.man=man;
+	public Coureur() {
 		int r = (Math.random() < 0.5) ? 0 : 1;
 		if (r == 0)
 			type = 's';
@@ -33,6 +37,8 @@ public class Coureur extends Agent {
 	}
 	
 	protected void setup() {
+		 Object[] args = getArguments();
+		 man = (String) args[0];
 		addBehaviour(new subscribeBehaviour());
 //		addBehaviour(new receiveInfo());
 //		addBehaviour(new getPente());
@@ -44,6 +50,7 @@ public class Coureur extends Agent {
 		public void action() {
 			ACLMessage message = new ACLMessage(ACLMessage.SUBSCRIBE);
 			message.addReceiver(new AID("WORLD", AID.ISLOCALNAME));
+			message.setContent(toJSON());
 			send(message);
 			ACLMessage messageManager = new ACLMessage(ACLMessage.SUBSCRIBE);
 			messageManager.addReceiver(new AID(man,AID.ISLOCALNAME));
@@ -143,6 +150,33 @@ public class Coureur extends Agent {
 
 	public void majVitesseC(int consigne) {
 		vitesseNormale += consigne;
+	}
+	public String toJSON() {
+		ObjectMapper mapper = new ObjectMapper();
+		String s = "";
+		try {
+			s = mapper.writeValueAsString(this);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return s;
+	}
+	public static Coureur read(String jsonString) {
+		ObjectMapper mapper = new ObjectMapper();
+		Coureur p = null;
+		try {
+			p = mapper.readValue(jsonString, Coureur.class);
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (JsonMappingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return p;
 	}
 
 }

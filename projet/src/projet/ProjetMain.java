@@ -24,15 +24,14 @@ public class ProjetMain {
 			ac1.start();
 			ac2.start();
 
-			for(int i =0;i<5;i++){
-				ac = cc.createNewAgent("C"+i, "projet.Coureur",new String[]{"MAN1"} );
+			//for(int i =0;i<10;i++){
+				ac = cc.createNewAgent("C1", "projet.Coureur",new Object[]{new String("MAN1")} );
 				ac.start();
-			}
-			for(int i =0;i<5;i++){
-				ac = cc.createNewAgent("C"+i, "projet.Coureur",new String[]{"MAN2"} );
-				ac.start();
-			}
-			ac.start();
+			//}
+//			for(int i =10;i<20;i++){
+//				ac = cc.createNewAgent("C"+i, "projet.Coureur",new Object[]{new String("MAN2")} );
+//				ac.start();
+//			}
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
