@@ -16,11 +16,12 @@ import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
+import model.Coureur;
 
 
 public class AgentManager extends Agent{
 	private final int TEAM_SIZE = 10;
-	private ArrayList<Coureur> runners = new ArrayList<Coureur>();
+	private ArrayList<model.Coureur> runners = new ArrayList<model.Coureur>();
 	
 	private int leader;
 	private AID car = null;
@@ -77,7 +78,6 @@ public class AgentManager extends Agent{
     					// TODO Auto-generated catch block
     					e.printStackTrace();
     				}
-    				System.out.println("Runner suscribed for team"+getLocalName()+":"+newRunner.getAID());
     				runners.add(newRunner);
     				if(newRunner.leader)
     					leader = runners.indexOf(newRunner);
@@ -166,8 +166,8 @@ public class ManageRaceBehaviour extends Behaviour{
 	public void action() {
 		for(Coureur r : runners){
 			ACLMessage aclMessage =new ACLMessage(ACLMessage.REQUEST);
-			AID aidReceiver = r.getAID();
-			aclMessage.addReceiver(aidReceiver);
+			//AID aidReceiver = r.getAID();
+			//aclMessage.addReceiver(aidReceiver);
 			aclMessage.setContent("40");
 		}
 	}
