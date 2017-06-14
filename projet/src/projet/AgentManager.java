@@ -17,6 +17,7 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import model.Coureur;
+import model.Voiture;
 
 
 public class AgentManager extends Agent{
@@ -24,7 +25,8 @@ public class AgentManager extends Agent{
 	private ArrayList<model.Coureur> runners = new ArrayList<model.Coureur>();
 	
 	private int leader;
-	private AID car = null;
+	private AID carAid = null;
+	private model.Voiture car = null;
 	
 	private boolean raceStarted = false;
 	private boolean allRunnersDone = false;
@@ -64,24 +66,24 @@ public class AgentManager extends Agent{
 
 		@Override
     	public void action() {
-			System.out.println("WAITING FOR RUNNERS");
+			System.out.println("WAITING FOR RUNNERS" + this.getAgent().getName());
 			
 			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.SUBSCRIBE);
 			ACLMessage message = myAgent.receive(mt);
     		if(message != null){
-    			if(message.getContent().equals("subscribeRunner")){
-    				ObjectMapper mapper = new ObjectMapper();
-    				Coureur newRunner =null;
-    				try {
-    					newRunner = mapper.readValue(message.getContent(), Coureur.class);
-    				} catch (IOException e) {
-    					// TODO Auto-generated catch block
-    					e.printStackTrace();
-    				}
-    				runners.add(newRunner);
-    				if(newRunner.leader)
-    					leader = runners.indexOf(newRunner);
-    			}
+    			
+				ObjectMapper mapper = new ObjectMapper();
+				Coureur newRunner =null;
+				try {
+					newRunner = mapper.readValue(message.getContent(), Coureur.class);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				runners.add(newRunner);
+				if(newRunner.leader)
+					leader = runners.indexOf(newRunner);
+    			
     		}
     		else
     			block();
@@ -103,9 +105,18 @@ public class WaitCarBehaviour extends Behaviour{
 			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
 			ACLMessage message = myAgent.receive(mt);
     		if(message != null){
-    			if(message.getContent().equals("subscribeCar")){
-    				car = message.getSender();
-    			}
+    			
+				carAid = message.getSender();
+				ObjectMapper mapper = new ObjectMapper();
+				Voiture voiture =null;
+				try {
+					voiture = mapper.readValue(message.getContent(), Voiture.class);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				car = voiture;
+    			
     		}
     		else
     			block();
@@ -122,7 +133,7 @@ public class WaitCarBehaviour extends Behaviour{
 
 		@Override
 		public void action() {
-			ACLMessage aclMessage =new ACLMessage(ACLMessage.INFORM);
+			ACLMessage aclMessage =new ACLMessage(ACLMessage.SUBSCRIBE);
 			AID aidReceiver = getReceiver("WORLD", "RaceWorld");
 			aclMessage.addReceiver(aidReceiver);
 			aclMessage.setContent("TeamReady");

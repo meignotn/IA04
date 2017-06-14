@@ -10,7 +10,7 @@ import model.Coureur;
 
 public class AgentCoureur extends Agent{
 	String man;
-	Coureur c;
+	Coureur c = new Coureur();
 	protected void setup() {
 		 Object[] args = getArguments();
 		 man = (String) args[0];
@@ -23,10 +23,11 @@ public class AgentCoureur extends Agent{
 	private class subscribeBehaviour extends OneShotBehaviour{
 		@Override
 		public void action() {
-			ACLMessage messageRace = new ACLMessage(ACLMessage.SUBSCRIBE);
+			/*ACLMessage messageRace = new ACLMessage(ACLMessage.SUBSCRIBE);
 			messageRace.addReceiver(new AID("WORLD",AID.ISLOCALNAME));
-			send(messageRace);
+			send(messageRace);*/
 			ACLMessage messageManager = new ACLMessage(ACLMessage.SUBSCRIBE);
+			messageManager.setContent(c.toJSON());
 			messageManager.addReceiver(new AID(man,AID.ISLOCALNAME));
 			send(messageManager);
 		}
