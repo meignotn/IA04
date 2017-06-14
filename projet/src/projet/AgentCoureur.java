@@ -46,7 +46,9 @@ public class AgentCoureur extends Agent{
 					System.out.println("Pente actuelle:" + s);
 					addBehaviour(new getPente());
 					addBehaviour(new getNextSupplies());
-
+				} else if (message.getContent().charAt(0) == 'c') {
+					addBehaviour(new getConsigne());
+					addBehaviour(new getNextSupplies());
 				}
 			} else
 				block();
@@ -77,17 +79,21 @@ public class AgentCoureur extends Agent{
 
 	}
 
-	private class getConsigne extends CyclicBehaviour{
+	private class getConsigne extends CyclicBehaviour {
 		@Override
 		public void action(){
-			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
+			ACLMessage message = new ACLMessage(ACLMessage.REQUEST);
+			message.addReceiver(new AID(man, AID.ISLOCALNAME));
+			message.addReplyTo(getAID());
+			send(message);
+			/*MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
 			ACLMessage message = receive(mt);
 			if(message != null){
 				String s = message.getContent();
 				
 			} else {
 				block();
-			}
+			}*/
 		}
 	}
 }
