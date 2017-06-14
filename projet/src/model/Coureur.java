@@ -1,6 +1,7 @@
 package model;
 
 import java.io.IOException;
+import java.util.Random;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -25,19 +26,15 @@ public class Coureur{
 		else if(r==1)
 			type='g';
 		km = 0;
-		energie = 50;
-		fatigue = 0;
-		hydratation = 50;
+		energie = new Random().nextInt(10)+10;
+		fatigue = new Random().nextInt(10);
+		hydratation = new Random().nextInt(10)+10;
 		stockEau = 10;
 		stockNourriture = 10;
-		//vitesseMax = 15;
-		vitesse = 50;
+		vitesse = new Random().nextInt(10)+50;
 		
 	}
-	
-	
-	
-	
+		
 	public void boire(){
 		if(hydratation<10 && stockEau>0){
 			hydratation+=5;
@@ -84,6 +81,7 @@ public class Coureur{
 		stockEau+=10;
 		stockNourriture+=10;
 	}
+	
 	public String toJSON() {
 		ObjectMapper mapper = new ObjectMapper();
 		String s = "";
@@ -94,6 +92,7 @@ public class Coureur{
 		}
 		return s;
 	}
+	
 	public static Coureur read(String jsonString) {
 		ObjectMapper mapper = new ObjectMapper();
 		Coureur p = null;
