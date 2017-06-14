@@ -86,14 +86,6 @@ public class AgentCoureur extends Agent{
 			message.addReceiver(new AID(man, AID.ISLOCALNAME));
 			message.addReplyTo(getAID());
 			send(message);
-			/*MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
-			ACLMessage message = receive(mt);
-			if(message != null){
-				String s = message.getContent();
-				
-			} else {
-				block();
-			}*/
 		}
 	}
 }
