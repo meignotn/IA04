@@ -159,7 +159,6 @@ public class RaceWorld extends Agent{
 					}
 				}
 				teams.put(manager, t);
-				System.out.println(t.name);
 				
 			}else
 				block();
@@ -182,6 +181,8 @@ public class RaceWorld extends Agent{
 			for(Entry<AID,Team> team : teams.entrySet()){
 				for(Coureur c: team.getValue().getCoureurs()){
 					if(c.getVitesse()!=0){
+						int tmp_vitesse = c.getVitesse();
+						float tmp_position = c.getPosition();
 						int energierelief = penteMoyenne((int)c.getPosition(), (int)(c.getPosition()+c.getVitesse()*5.0/60.0));
 						// Les grimpeurs s'epuisent moins dans les montées
 						if(c.getType()=='g')
@@ -192,6 +193,9 @@ public class RaceWorld extends Agent{
 						int km=(int)c.getPosition();
 						int m = (int)((c.getPosition()-(int)c.getPosition())*1000.0);
 						System.out.println(team.getValue().getName()+"\t"+km+"km"+m+"\tEnergie:"+c.getEnergie()+"\tVitesse:"+c.getVitesse() +"\tTick:"+getTickCount());
+						if(c.getPosition()>circuit.length){
+							
+						}
 					}
 				}
 				
@@ -205,6 +209,8 @@ public class RaceWorld extends Agent{
 	}
 	int penteMoyenne(int a,int b){
 		int somme=0;
+		if(b-a==0)
+			return circuit[a];
 		if(b>circuit.length)
 			b=circuit.length;
 		for(int i=a;i<b;i++){
