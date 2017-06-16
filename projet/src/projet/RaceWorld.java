@@ -1,7 +1,9 @@
 package projet;
 
 import java.util.ArrayList;
+import java.util.Currency;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
@@ -25,11 +27,11 @@ public class RaceWorld extends Agent{
 	//a tick is 5 min for the race
 	private final int TEAMS_NUMBER = 3;
 	private final int RUNNERS_PER_TEAM = 3;
-	private final int SECOND_PER_TICK=10*60;
+	private final int SECOND_PER_TICK=600;
 	int circuit[];
 	Map<AID,Team> teams = new HashMap<AID,Team>();
 	ArrayList<Team> teamList = new ArrayList<Team>();
-	Map<Coureur,Integer> podium = new HashMap();
+	Map<String,ArrayList<Integer>> podium = new HashMap();
 	boolean end;
 	int teamsReady = 0;
 	int ravitaillement;
@@ -110,6 +112,9 @@ public class RaceWorld extends Agent{
 			return teamsReady == TEAMS_NUMBER;
 		}
 		public int onEnd(){
+			for(Team t : teamList){
+				podium.put(t.name, new ArrayList<Integer>());
+			}
 			addBehaviour(new updateTeam());
 			addBehaviour(new nextStep(getAgent(),500));
 			return super.onEnd();
@@ -180,7 +185,7 @@ public class RaceWorld extends Agent{
 		protected void onTick() {
 			for(Entry<AID,Team> team : teams.entrySet()){
 				for(Coureur c: team.getValue().getCoureurs()){
-					if(c.getVitesse()!=0){
+					if(c.getVitesse()!=0 && c.getPosition()<circuit.length){
 						int tmp_vitesse = c.getVitesse();
 						float tmp_position = c.getPosition();
 						int energierelief = penteMoyenne((int)c.getPosition(), (int)(c.getPosition()+c.getVitesse()*5.0/60.0));
@@ -193,30 +198,63 @@ public class RaceWorld extends Agent{
 						int km=(int)c.getPosition();
 						int m = (int)((c.getPosition()-(int)c.getPosition())*1000.0);
 						System.out.println(team.getValue().getName()+"\t"+km+"km"+m+"\tEnergie:"+c.getEnergie()+"\tVitesse:"+c.getVitesse() +"\tTick:"+getTickCount());
-						if(c.getPosition()>circuit.length){
-							//PODIUMazezae
+						
+						//Get time of the run
+						if(c.getPosition()>=circuit.length){
+							int time = (getTickCount()-1) * SECOND_PER_TICK ;
+							float distance = circuit.length-tmp_position;
+							time = (int)(time + distance*3600.0/tmp_vitesse);
+							podium.get(team.getValue().getName()).add(time);
+							System.out.println("A runner of "+team.getValue().getName()+"finished in "+time+"s");
 						}
 					}
 				}
 				
 			}
-			for(Entry<AID,Team> team : teams.entrySet()){
-				addBehaviour(new askManager(team.getKey(), team.getValue()));
-			}
-			if(isFinished())
+			if(isFinished()){
 				this.stop();
+				affClassement();
+			}else{
+				for(Entry<AID,Team> team : teams.entrySet()){
+					addBehaviour(new askManager(team.getKey(), team.getValue()));
+				}
+			}
+			
 		}
 	}
 	int penteMoyenne(int a,int b){
 		int somme=0;
-		if(b-a==0)
-			return circuit[a];
 		if(b>circuit.length)
 			b=circuit.length;
+		if(b-a==0)
+			return circuit[a];
 		for(int i=a;i<b;i++){
 			somme+=circuit[i];
 		}
 		return somme/(b-a);
+	}
+	public void affClassement(){
+		int min=0;
+		String team = null;
+		System.out.println("Individual Ranking");
+		for(int k=0;k<TEAMS_NUMBER*RUNNERS_PER_TEAM;k++){
+			for(Entry<String, ArrayList<Integer>> e:podium.entrySet()){
+				for(int i:e.getValue()){
+					if(team==null){
+						team=e.getKey();
+						min=i;
+					}
+					if(i<min){
+						team=e.getKey();
+						min=i;
+					}
+				}
+			}
+			System.out.println(team+"\t"+min/3600+"h"+min%3600/60+"m"+min%3600%60+"s");
+			podium.get(team).remove((Integer)min);	
+			team = null;
+		}
+		
 	}
 	
 }
