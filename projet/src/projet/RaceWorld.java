@@ -23,8 +23,8 @@ import model.Team;
 public class RaceWorld extends Agent{
 	
 	//a tick is 5 min for the race
-	private final int TEAMS_NUMBER = 2;
-	private final int RUNNERS_PER_TEAM = 1;
+	private final int TEAMS_NUMBER = 3;
+	private final int RUNNERS_PER_TEAM = 3;
 	private final int SECOND_PER_TICK=10*60;
 	int circuit[];
 	Map<AID,Team> teams = new HashMap<AID,Team>();
@@ -153,9 +153,10 @@ public class RaceWorld extends Agent{
 				AID manager =null;
 				
 				for(Entry<AID, Team> e : teams.entrySet()){
-					if(e.getValue().getName().equals(t.name));
+					if(e.getValue().getName().equals(t.name)){
 						manager = e.getKey();
 						break;
+					}
 				}
 				teams.put(manager, t);
 				System.out.println(t.name);
