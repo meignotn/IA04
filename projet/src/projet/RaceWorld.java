@@ -1,143 +1,215 @@
 package projet;
 
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
+
+import org.json.JSONObject;
 
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
-import jade.core.behaviours.CyclicBehaviour;
-import jade.core.behaviours.SequentialBehaviour;
+import jade.core.behaviours.OneShotBehaviour;
+import jade.core.behaviours.TickerBehaviour;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
-import projet.AgentManager.ManageRaceBehaviour;
-import projet.AgentManager.TeamIsReadyBehaviour;
-import projet.AgentManager.WaitForStartBehaviour;
-import projet.AgentManager.WaitRunnersBehaviour;
+import jade.wrapper.AgentController;
+import model.Coureur;
+import model.Team;
 
+@SuppressWarnings("serial")
 public class RaceWorld extends Agent{
-
-	private static final long serialVersionUID = 1L;
+	
+	//a tick is 5 min for the race
 	private final int TEAMS_NUMBER = 2;
-	int tabPente[];
-	//ArrayList<Coureur> ListCoureur;
+	private final int RUNNERS_PER_TEAM = 1;
+	private final int SECOND_PER_TICK=10*60;
+	int circuit[];
+	Map<AID,Team> teams = new HashMap<AID,Team>();
+	ArrayList<Team> teamList = new ArrayList<Team>();
+	Map<Coureur,Integer> podium = new HashMap();
 	boolean end;
 	int teamsReady = 0;
-	int supplies[];
+	int ravitaillement;
+	
 	public RaceWorld(){
 		end=false;
-		tabPente = new int[new Random().nextInt(200)+100];
-		for(int i=0;i<tabPente.length;i++)
-			if(new Random().nextInt(1)==0)
-				tabPente[i]=new Random().nextInt(60);
-			else
-				tabPente[i]=new Random().nextInt(60)*-1;
-		supplies = new int[tabPente.length/100];
-		for(int i=0;i<supplies.length;i++){
-			supplies[i]=i*100+new Random().nextInt(100);
+		circuit = new int[new Random().nextInt(100)+150];
+		
+		for(int i=0;i<circuit.length;i++){
+			int pente = 0;
+			if(i!=0)
+				pente=circuit[i-1];
+			circuit[i]=100;
+			while(circuit[i]>10 || circuit[i]<-10){
+				if(new Random().nextInt(2)==0)
+					circuit[i]=pente+new Random().nextInt(2);
+				else
+					circuit[i]=pente-new Random().nextInt(2);
+			}
 		}
-		System.out.println("Race:"+tabPente.length);
+		if(circuit.length>200)
+			ravitaillement = new Random().nextInt(50)+75;
+		System.out.println("Race:"+circuit.length);
+		System.out.println("Supplies:"+ravitaillement);
+
+		for(int i=0;i<TEAMS_NUMBER;i++){
+			Team team = new Team("Team"+i);
+			for(int j=0;j<RUNNERS_PER_TEAM;j++){
+				team.coureurs.add(new Coureur());
+			}
+			teamList.add(team);
+		}
+		for(int i=0;i<circuit.length;i++){
+			System.out.print(circuit[i]+" ");
+		}
 	}
+
+	
 	
 	protected void setup(){
-		addBehaviour(new WaitAndStardBehaviour());
-		addBehaviour(new sendPente());
-		addBehaviour(new sendNextSupplies());
-	}
-	
-	public class WaitAndStardBehaviour extends SequentialBehaviour{
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 1L;
-
-		WaitAndStardBehaviour(){
-			addSubBehaviour(new ReceiveSubcriptionBehaviour());
-			addSubBehaviour(new StartRaceBehaviour());
+		
+		System.out.println(getLocalName()+" created");
+		for(int i=0;i<TEAMS_NUMBER;i++){
+			try{
+				AgentController ac = getContainerController().createNewAgent("MAN"+i, "projet.AgentManager", null);
+				ac.start();
+			}catch(Exception e){System.out.println(e.getMessage());}
 		}
-	}
-	
+		addBehaviour(new ReceiveSubcriptionBehaviour());
+	}	
 	
 	private class ReceiveSubcriptionBehaviour extends Behaviour {
+		
 		@Override
 		public void action() {
 			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.SUBSCRIBE);
 			ACLMessage message = receive(mt);
 			if (message != null) {
-				if(message.getContent().equals("TeamReady")){
+				try{
+//					System.out.println(getLocalName()+" sub received");
+					JSONObject json = new JSONObject();
+					teams.put(message.getSender(), teamList.get(teamsReady));
+					json.put("circuit", circuit);
+					json.put("supplies", ravitaillement);
+					json.put("team", teamList.get(teamsReady).toJSON());
 					teamsReady++;
-					System.out.println("Team" + teamsReady + "SUSCRIBED");
-				}
-					
-
+					message.setContent(json.toString());
+					message.removeReceiver((AID) message.getAllReceiver().next());
+					message.addReceiver(message.getSender());
+					send(message);
+				}catch(Exception e){System.out.println(e.getMessage());}
 			} else
 				block();
 		}
 		
 		@Override
 		public boolean done() {
-			// TODO Auto-generated method stub
 			return teamsReady == TEAMS_NUMBER;
 		}
+		public int onEnd(){
+			addBehaviour(new updateTeam());
+			addBehaviour(new nextStep(getAgent(),500));
+			return super.onEnd();
+		}
 	}
 	
-	private class StartRaceBehaviour extends Behaviour {
+	private class askManager extends OneShotBehaviour {
+		AID manager;
+		Team t;
+		askManager(AID manager,Team t){
+			this.manager=manager;
+			this.t=t;
+		}
 		@Override
 		public void action() {
-			System.out.println("RACE STARTED");
-		}
-		
-		@Override
-		public boolean done() {
-			// TODO Auto-generated method stub
-			return false;
+			ACLMessage message = new ACLMessage(ACLMessage.REQUEST);
+//			System.out.println("sending request to manager");
+			message.addReceiver(manager);
+			message.setContent(t.toJSON());
+			send(message);
 		}
 	}
+	public boolean isFinished(){
+		for(Team t : teams.values()){
+			for(Coureur c:t.getCoureurs())
+				if(c.getPosition() < circuit.length)
+					return false;
+		}
+		System.out.println("Race is over");
+		return true;
+	}
 	
-	private class End extends CyclicBehaviour {
+	private class updateTeam extends Behaviour {
 		@Override
 		public void action() {
 			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
 			ACLMessage message = receive(mt);
 			if (message != null) {
-				end = true;
-			} else
+//				System.out.println(getLocalName()+"received request");
+				Team t = Team.read(message.getContent());
+				AID manager =null;
+				
+				for(Entry<AID, Team> e : teams.entrySet()){
+					if(e.getValue().getName().equals(t.name));
+						manager = e.getKey();
+						break;
+				}
+				teams.put(manager, t);
+				System.out.println(t.name);
+				
+			}else
 				block();
+		}
+
+		@Override
+		public boolean done() {
+			return isFinished();
 		}
 	}
 	
-	private class sendPente extends CyclicBehaviour {
-		@Override
-		public void action(){
-			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
-			ACLMessage message = receive(mt);
-			if (message != null && message.getContent().charAt(0)=='p') {
-				int currentKM = Integer.parseInt(message.getContent().substring(1));
-				message.setContent("p"+tabPente[currentKM]);
-				message.clearAllReceiver();
-				message.addReceiver((AID) message.getAllReplyTo().next());
-				message.setPerformative(ACLMessage.INFORM);
-				send(message);
-			} else
-				block();
+	private class nextStep extends TickerBehaviour{
+		
+		public nextStep(Agent a, long period) {
+			super(a, period);
 		}
-	}
 
-	private class sendNextSupplies extends CyclicBehaviour {
 		@Override
-		public void action(){
-			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
-			ACLMessage message = receive(mt);
-			if (message != null && message.getContent().charAt(0)=='s') {
-				int currentKM = Integer.parseInt(message.getContent().substring(1));
-				message.setContent("s"+supplies[currentKM/100]);
-				message.clearAllReceiver();
-				message.addReceiver((AID) message.getAllReplyTo().next());
-				message.setPerformative(ACLMessage.INFORM);
-				send(message);
-			} else
-				block();
+		protected void onTick() {
+			for(Entry<AID,Team> team : teams.entrySet()){
+				for(Coureur c: team.getValue().getCoureurs()){
+					if(c.getVitesse()!=0){
+						int energierelief = penteMoyenne((int)c.getPosition(), (int)(c.getPosition()+c.getVitesse()*5.0/60.0));
+						// Les grimpeurs s'epuisent moins dans les montées
+						if(c.getType()=='g')
+							if(energierelief>5)
+								energierelief = 5;
+						c.setEnergie(c.getEnergie()-c.getVitesse()+40-energierelief);
+						c.avancer(SECOND_PER_TICK);
+						int km=(int)c.getPosition();
+						int m = (int)((c.getPosition()-(int)c.getPosition())*1000.0);
+						System.out.println(team.getValue().getName()+"\t"+km+"km"+m+"\tEnergie:"+c.getEnergie()+"\tVitesse:"+c.getVitesse() +"\tTick:"+getTickCount());
+					}
+				}
+				
+			}
+			for(Entry<AID,Team> team : teams.entrySet()){
+				addBehaviour(new askManager(team.getKey(), team.getValue()));
+			}
+			if(isFinished())
+				this.stop();
 		}
 	}
+	int penteMoyenne(int a,int b){
+		int somme=0;
+		if(b>circuit.length)
+			b=circuit.length;
+		for(int i=a;i<b;i++){
+			somme+=circuit[i];
+		}
+		return somme/(b-a);
+	}
+	
 }

@@ -8,6 +8,7 @@ public class MainBoot {
 
 	public static void main(String[] args) {
 		boot_gui();
+		ProjetMain.main(null);
 	}
 
 	public static void boot_gui() {

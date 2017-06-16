@@ -1,4 +1,4 @@
 main=true
-gui=true
+gui=false
 platform-id=projet
-local-port=12345
+local-port=54321

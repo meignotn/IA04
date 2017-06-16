@@ -1,15 +1,14 @@
 package projet;
 
-import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Map;
+import java.util.Random;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.json.JSONObject;
 
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
-import jade.core.behaviours.CyclicBehaviour;
-import jade.core.behaviours.SequentialBehaviour;
+import jade.core.behaviours.OneShotBehaviour;
 import jade.domain.DFService;
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
@@ -17,197 +16,125 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import model.Coureur;
-import model.Voiture;
+import model.Team;
 
+
+@SuppressWarnings("serial")
 public class AgentManager extends Agent {
-	private final int TEAM_SIZE = 10;
-	private ArrayList<model.Coureur> runners = new ArrayList<model.Coureur>();
-
-	private int leader;
-
-	private AID carAid = null;
-	private model.Voiture car = null;
-	
-
-	private boolean raceStarted = false;
-	private boolean allRunnersDone = false;
-
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
+	private Team team=null;
+	Map<Coureur,String> currentState;
+	int[] circuit;
+	int ravitaillement;
+	//private AID carAid = null;
 
 	protected void setup() {
 		dfRegister("AgentManager", "AgentManager");
-		System.out.println(this.getAID());
-		addBehaviour(new ManageTeamBehaviour());
+		System.out.println("Manager Ready:"+this.getAID());
+		addBehaviour(new subscribeBehaviour());
+		addBehaviour(new acceptTeam());
+		//addBehaviour(new ManageTeamBehaviour());
 
 	}
-
-	public class ManageTeamBehaviour extends SequentialBehaviour {
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 1L;
-
-		ManageTeamBehaviour() {
-			addSubBehaviour(new WaitRunnersBehaviour());
-			// addSubBehaviour(new WaitCarBehaviour());
-			addSubBehaviour(new TeamIsReadyBehaviour());
-			addSubBehaviour(new WaitForStartBehaviour());
-			addSubBehaviour(new ManageRaceBehaviour());
+	private class subscribeBehaviour extends OneShotBehaviour{
+		@Override
+		public void action() {
+			System.out.println(getLocalName()+" subscribing");
+			ACLMessage messageRace = new ACLMessage(ACLMessage.SUBSCRIBE);
+			messageRace.addReceiver(new AID("WORLD",AID.ISLOCALNAME));
+			send(messageRace);
 		}
 	}
-
-	public class WaitRunnersBehaviour extends Behaviour {
-
-		private static final long serialVersionUID = 1L;
-
+	private class acceptTeam extends Behaviour{
 		@Override
-    	public void action() {
-			System.out.println("WAITING FOR RUNNERS" + this.getAgent().getName());
-			
+		public void action() {
 			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.SUBSCRIBE);
-			ACLMessage message = myAgent.receive(mt);
-    		if(message != null){
-    			
-				ObjectMapper mapper = new ObjectMapper();
-				Coureur newRunner =null;
-				try {
-					newRunner = mapper.readValue(message.getContent(), Coureur.class);
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				runners.add(newRunner);
-				if(newRunner.leader)
-					leader = runners.indexOf(newRunner);
-    			
-    		}
-    		else
-    			block();
-    	}
-    	@Override
-    	public boolean done() {
-    		return runners.size() == TEAM_SIZE;
-    	}
-
-	}
-
-	public class WaitCarBehaviour extends Behaviour {
-
-		private static final long serialVersionUID = 1L;
-
-		@Override
-		public void action() {
-			System.out.println("WAITING FOR THE CAR");
-
-			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
-			ACLMessage message = myAgent.receive(mt);
-
-    		if(message != null){
-    			
-				carAid = message.getSender();
-				ObjectMapper mapper = new ObjectMapper();
-				Voiture voiture =null;
-				try {
-					voiture = mapper.readValue(message.getContent(), Voiture.class);
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-				car = voiture;
-    			
-    		}
-    		else
-    			block();
-    	}
-    	@Override
-    	public boolean done() {
-    		return car != null;
-    	}
-
-	}
-
-	public class TeamIsReadyBehaviour extends Behaviour {
-
-		private static final long serialVersionUID = 1L;
-
-		@Override
-		public void action() {
-
-			ACLMessage aclMessage =new ACLMessage(ACLMessage.SUBSCRIBE);
-
-			AID aidReceiver = getReceiver("WORLD", "RaceWorld");
-			aclMessage.addReceiver(aidReceiver);
-			aclMessage.setContent("TeamReady");
-		}
-
-		@Override
-		public boolean done() {
-			// TODO Auto-generated method stub
-			return false;
-		}
-
-	}
-
-	public class WaitForStartBehaviour extends Behaviour {
-
-		private static final long serialVersionUID = 1L;
-
-		@Override
-		public void action() {
-			System.out.println("WAITING FOR START OF THE RACE");
-
-			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.INFORM);
-			ACLMessage message = myAgent.receive(mt);
+			ACLMessage message = receive(mt);
 			if (message != null) {
-				if (message.getContent().equals("racestarted")) {
-					raceStarted = true;
+				try{
+					System.out.println(getLocalName()+" accepting team");
+					JSONObject json = new JSONObject(message.getContent());
+					team = Team.read(json.getString("team"));
+					circuit = new int[json.getJSONArray("circuit").length()];
+					for(int i=0;i<json.getJSONArray("circuit").length();i++){
+						circuit[i]=json.getJSONArray("circuit").getInt(i);
+					}
+					ravitaillement=json.getInt("supplies");
+					
+				}catch(Exception e){
+					System.out.println(e.getMessage());
 				}
+
 			} else
 				block();
 		}
-
 		@Override
 		public boolean done() {
-			return raceStarted;
+			return team!=null;
+		}
+		
+		public int onEnd(){
+			System.out.println("Team "+team.getName()+" suscribed to his manager");
+			addBehaviour(new receiveRequest());
+			return super.onEnd();
+		}
+	}
+
+	private class receiveRequest extends Behaviour{
+		@Override
+		public void action() {
+			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
+			ACLMessage message = receive(mt);
+			if (message != null) {
+//				System.out.println(getLocalName()+"received request");
+				try{
+					team = Team.read(message.getContent());
+					addBehaviour(new sendConsigne());
+				}catch(Exception e){
+					System.out.println(e.getMessage());
+				}
+
+			} else
+				block();
+		}
+		@Override
+		public boolean done() {
+			return isFinished();
 		}
 	}
 	
-	public class sendConsigne extends CyclicBehaviour {
+	public class sendConsigne extends OneShotBehaviour {
 		@Override
 		public void action(){
-			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.REQUEST);
-			ACLMessage message = receive(mt);
-			if (message != null && message.getContent().charAt(0)=='c') {
-				message.setContent("c"/*+consigne*/);
-				message.clearAllReceiver();
-				message.addReceiver((AID) message.getAllReplyTo().next());
-				message.setPerformative(ACLMessage.INFORM);
-				send(message);
-			} else
-				block();
+			// TODO HEURISTIC HERE
+//			System.out.println("sending consigne");
+			for(Coureur c:team.getCoureurs()){
+				int vitesse = 0;
+				if(c.getVitesse()==0)
+					vitesse=40;
+				else
+					vitesse=c.getVitesse();
+				do{
+					if(Math.random()<0.5)
+						vitesse =vitesse+new Random().nextInt(5);
+					else
+						vitesse =vitesse-new Random().nextInt(5);
+				}while(vitesse>50 || vitesse<30);
+				c.setVitesse(vitesse);
+			}
+			ACLMessage message = new ACLMessage(ACLMessage.INFORM);
+			message.setContent(team.toJSON());
+			message.addReceiver(new AID("WORLD",AID.ISLOCALNAME));
+			send(message);
 		}
 	}
+	
 
-	public class ManageRaceBehaviour extends Behaviour {
-
-		@Override
-		public void action() {
-			for (Coureur r : runners) {
-				ACLMessage aclMessage = new ACLMessage(ACLMessage.REQUEST);
-				// AID aidReceiver = r.getAID();
-				// aclMessage.addReceiver(aidReceiver);
-				aclMessage.setContent("40");
-			}
-		}
-
-		@Override
-		public boolean done() {
-			return allRunnersDone;
-		}
-
+	public boolean isFinished(){
+		for(Coureur c:team.getCoureurs())
+			if(c.getPosition() < circuit.length)
+				return false;
+		System.out.println(team.name +" has finished");
+		return true;
 	}
 
 	public void dfRegister(String type, String name) {
@@ -224,21 +151,5 @@ public class AgentManager extends Agent {
 		}
 	}
 
-	private AID getReceiver(String type, String name) {
-		AID rec = null;
-		DFAgentDescription template = new DFAgentDescription();
-		ServiceDescription sd = new ServiceDescription();
-		sd.setType(type);
-		sd.setName(name);
-		template.addServices(sd);
-		try {
-			DFAgentDescription[] result = DFService.search(this, template);
-			if (result.length > 0)
-				rec = result[0].getName();
-		} catch (FIPAException fe) {
-			fe.printStackTrace();
-		}
-		return rec;
-	}
-
+	
 }
