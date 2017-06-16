@@ -194,7 +194,7 @@ public class RaceWorld extends Agent{
 						int m = (int)((c.getPosition()-(int)c.getPosition())*1000.0);
 						System.out.println(team.getValue().getName()+"\t"+km+"km"+m+"\tEnergie:"+c.getEnergie()+"\tVitesse:"+c.getVitesse() +"\tTick:"+getTickCount());
 						if(c.getPosition()>circuit.length){
-							//PODIUM
+							//PODIUMazezae
 						}
 					}
 				}
