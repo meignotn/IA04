@@ -45,12 +45,13 @@ public class RaceWorld extends Agent{
 			if(i!=0)
 				pente=circuit[i-1];
 			circuit[i]=100;
-			while(circuit[i]>10 || circuit[i]<-10){
-				if(new Random().nextInt(2)==0)
-					circuit[i]=pente+new Random().nextInt(2);
-				else
-					circuit[i]=pente-new Random().nextInt(2);
-			}
+			int r= new Random().nextInt(10)+1;
+			int d = new Random().nextInt(2);
+			if(d==0)
+				d=-1;
+			else
+				d=1;
+			circuit[i]=r*d;
 		}
 		if(circuit.length>200)
 			ravitaillement = new Random().nextInt(50)+75;
@@ -236,6 +237,7 @@ public class RaceWorld extends Agent{
 	public void affClassement(){
 		int min=0;
 		String team = null;
+		String s= "";
 		System.out.println("Individual Ranking");
 		for(int k=0;k<TEAMS_NUMBER*RUNNERS_PER_TEAM;k++){
 			for(Entry<String, ArrayList<Integer>> e:podium.entrySet()){
@@ -251,6 +253,7 @@ public class RaceWorld extends Agent{
 				}
 			}
 			System.out.println(team+"\t"+min/3600+"h"+min%3600/60+"m"+min%3600%60+"s");
+			System.out.println(team+"\t"+min);
 			podium.get(team).remove((Integer)min);	
 			team = null;
 		}

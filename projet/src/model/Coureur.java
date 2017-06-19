@@ -2,6 +2,7 @@ package model;
 
 import java.io.IOException;
 import java.util.Random;
+
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,6 +14,10 @@ public class Coureur{
 	int vitesse;
 	public float position;
 	public boolean leader = false;
+	public int MAX_STOCK_NOURRITURE=5;
+	public int MAX_ENERGIE =100;
+	public int VITESSE_MAX=50;
+	public int VITESSE_CROISIERE=40;
 	
 	public Coureur(){
 		int r = (Math.random()<0.5)?0:1;
@@ -20,15 +25,28 @@ public class Coureur{
 			type='s';
 		else if(r==1)
 			type='g';
+		for(int i=0;i<5;i++){
+			int test =new Random().nextInt(4);
+			if(test==0)
+				MAX_ENERGIE++;
+			if(test==1)
+				MAX_STOCK_NOURRITURE++;
+			if(test==2)
+				VITESSE_MAX++;
+			if(test==3)
+				VITESSE_CROISIERE++;
+		}
 		position = 0;
 		energie = 100;
-		stockNourriture = 100;
+		stockNourriture = 10;
 		vitesse = 0;
 	}
 	
 	public void manger(){
-		energie++;
-		stockNourriture--;
+		if(stockNourriture>0){
+			setEnergie(energie+10);
+			stockNourriture--;
+		}
 	}
 	
 	
@@ -49,10 +67,6 @@ public class Coureur{
 		else if(energie<50){
 			vitesse-=1;
 		}
-	}
-	
-	public void ravitailler(){
-		stockNourriture=100;
 	}
 	
 	public String toJSON() {
@@ -102,8 +116,8 @@ public class Coureur{
 	public void setEnergie(int energie) {
 		if(energie<0)
 			this.energie=0;
-		else if(energie>100)
-			this.energie = 100;
+		else if(energie>MAX_ENERGIE)
+			this.energie = MAX_ENERGIE;
 		else
 			this.energie = energie;
 	}
@@ -113,7 +127,8 @@ public class Coureur{
 	}
 
 	public void setStockNourriture(int stockNourriture) {
-		this.stockNourriture = stockNourriture;
+		if(stockNourriture<=MAX_STOCK_NOURRITURE)
+			this.stockNourriture = stockNourriture;
 	}
 
 	public char getType() {
@@ -129,7 +144,10 @@ public class Coureur{
 	}
 
 	public void setVitesse(int vitesse) {
-		this.vitesse = vitesse;
+		if(vitesse > VITESSE_MAX)
+			vitesse=VITESSE_MAX;
+		else
+			this.vitesse = vitesse;
 	}
 
 	public float getPosition() {

@@ -21,7 +21,7 @@ import model.Team;
 
 @SuppressWarnings("serial")
 public class AgentManager extends Agent {
-	private Team team=null;
+	protected Team team=null;
 	Map<Coureur,String> currentState;
 	int[] circuit;
 	int ravitaillement;
@@ -102,23 +102,23 @@ public class AgentManager extends Agent {
 		}
 	}
 	
-	public class sendConsigne extends OneShotBehaviour {
+	public class sendConsigne extends OneShotBehaviour{
+		
 		@Override
 		public void action(){
-			// TODO HEURISTIC HERE
-//			System.out.println("sending consigne");
 			for(Coureur c:team.getCoureurs()){
 				int vitesse = 0;
 				if(c.getVitesse()==0)
 					vitesse=40;
 				else
 					vitesse=c.getVitesse();
-				do{
-					if(Math.random()<0.5)
-						vitesse =vitesse+new Random().nextInt(5);
-					else
-						vitesse =vitesse-new Random().nextInt(5);
-				}while(vitesse>50 || vitesse<30);
+				if(c.getEnergie()<50){
+					c.manger();
+				}
+				vitesse+=c.getEnergie()-50/10;
+				if(vitesse>50)
+					vitesse=50;
+				vitesse+=penteMoyenne((int)c.getPosition())*-1;
 				c.setVitesse(vitesse);
 			}
 			ACLMessage message = new ACLMessage(ACLMessage.INFORM);
@@ -127,7 +127,13 @@ public class AgentManager extends Agent {
 			send(message);
 		}
 	}
-	
+	public int penteMoyenne(int a){
+		int somme=0;
+		for(int i=a;i<a+50 && i<circuit.length;i++){
+			somme+=circuit[i];
+		}
+		return somme/(50);
+	}
 
 	public boolean isFinished(){
 		for(Coureur c:team.getCoureurs())
