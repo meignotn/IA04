@@ -18,8 +18,9 @@ public class ProjetMain {
 			p = new ProfileImpl(null, 12345, "projet", false);
 			cc = rt.createAgentContainer(p);
 			AgentController ac = cc.createNewAgent("WORLD", "projet.RaceWorld", null);
+			AgentController ac2 = cc.createNewAgent("carte", "affichage.carte", null);
 			ac.start();
-			
+			ac2.start();
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
