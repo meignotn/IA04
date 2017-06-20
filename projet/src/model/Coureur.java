@@ -7,6 +7,8 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import projet.RaceWorld;
+
 public class Coureur{
 	int energie;
 	int stockNourriture;
@@ -18,6 +20,7 @@ public class Coureur{
 	public int MAX_ENERGIE =100;
 	public int VITESSE_MAX=50;
 	public int VITESSE_CROISIERE=40;
+	public int dossard;
 	
 	public Coureur(){
 		int r = (Math.random()<0.5)?0:1;
@@ -25,7 +28,7 @@ public class Coureur{
 			type='s';
 		else if(r==1)
 			type='g';
-		for(int i=0;i<5;i++){
+		for(int i=0;i<10;i++){
 			int test =new Random().nextInt(4);
 			if(test==0)
 				MAX_ENERGIE++;
@@ -36,12 +39,54 @@ public class Coureur{
 			if(test==3)
 				VITESSE_CROISIERE++;
 		}
+		this.dossard = RaceWorld.dossard;
+		RaceWorld.dossard++;
 		position = 0;
 		energie = 100;
 		stockNourriture = 10;
 		vitesse = 0;
 	}
 	
+	public int getMAX_STOCK_NOURRITURE() {
+		return MAX_STOCK_NOURRITURE;
+	}
+
+	public void setMAX_STOCK_NOURRITURE(int mAX_STOCK_NOURRITURE) {
+		MAX_STOCK_NOURRITURE = mAX_STOCK_NOURRITURE;
+	}
+
+	public int getMAX_ENERGIE() {
+		return MAX_ENERGIE;
+	}
+
+	public void setMAX_ENERGIE(int mAX_ENERGIE) {
+		MAX_ENERGIE = mAX_ENERGIE;
+	}
+
+	public int getVITESSE_MAX() {
+		return VITESSE_MAX;
+	}
+
+	public void setVITESSE_MAX(int vITESSE_MAX) {
+		VITESSE_MAX = vITESSE_MAX;
+	}
+
+	public int getVITESSE_CROISIERE() {
+		return VITESSE_CROISIERE;
+	}
+
+	public void setVITESSE_CROISIERE(int vITESSE_CROISIERE) {
+		VITESSE_CROISIERE = vITESSE_CROISIERE;
+	}
+
+	public int getDossard() {
+		return dossard;
+	}
+
+	public void setDossard(int dossard) {
+		this.dossard = dossard;
+	}
+
 	public void manger(){
 		if(stockNourriture>0){
 			setEnergie(energie+10);
@@ -98,8 +143,10 @@ public class Coureur{
 		return p;
 	}
 
-	public Coureur(int energie, int stockNourriture, char type, int vitesse,
-			int position, boolean leader, String man, int seconde) {
+	
+
+	public Coureur(int energie, int stockNourriture, char type, int vitesse, float position, boolean leader,
+			int mAX_STOCK_NOURRITURE, int mAX_ENERGIE, int vITESSE_MAX, int vITESSE_CROISIERE, int dossard) {
 		super();
 		this.energie = energie;
 		this.stockNourriture = stockNourriture;
@@ -107,6 +154,11 @@ public class Coureur{
 		this.vitesse = vitesse;
 		this.position = position;
 		this.leader = leader;
+		MAX_STOCK_NOURRITURE = mAX_STOCK_NOURRITURE;
+		MAX_ENERGIE = mAX_ENERGIE;
+		VITESSE_MAX = vITESSE_MAX;
+		VITESSE_CROISIERE = vITESSE_CROISIERE;
+		this.dossard = dossard;
 	}
 
 	public int getEnergie() {
@@ -144,9 +196,9 @@ public class Coureur{
 	}
 
 	public void setVitesse(int vitesse) {
-		if(vitesse > VITESSE_MAX)
-			vitesse=VITESSE_MAX;
-		else
+		if(vitesse > VITESSE_MAX){
+			this.vitesse=VITESSE_MAX;
+		}else
 			this.vitesse = vitesse;
 	}
 

@@ -23,11 +23,10 @@ import model.Team;
 
 @SuppressWarnings("serial")
 public class RaceWorld extends Agent{
-	
-	//a tick is 5 min for the race
 	private final int TEAMS_NUMBER = 3;
 	private final int RUNNERS_PER_TEAM = 3;
 	private final int SECOND_PER_TICK=600;
+	public static int dossard=1;
 	int circuit[];
 	Map<AID,Team> teams = new HashMap<AID,Team>();
 	ArrayList<Team> teamList = new ArrayList<Team>();
@@ -39,11 +38,7 @@ public class RaceWorld extends Agent{
 	public RaceWorld(){
 		end=false;
 		circuit = new int[new Random().nextInt(100)+150];
-		
 		for(int i=0;i<circuit.length;i++){
-			int pente = 0;
-			if(i!=0)
-				pente=circuit[i-1];
 			circuit[i]=100;
 			int r= new Random().nextInt(10)+1;
 			int d = new Random().nextInt(2);
@@ -192,13 +187,14 @@ public class RaceWorld extends Agent{
 						int energierelief = penteMoyenne((int)c.getPosition(), (int)(c.getPosition()+c.getVitesse()*5.0/60.0));
 						// Les grimpeurs s'epuisent moins dans les montées
 						if(c.getType()=='g')
-							if(energierelief>5)
-								energierelief = 5;
-						c.setEnergie(c.getEnergie()-c.getVitesse()+40-energierelief);
+							if(energierelief>4)
+								energierelief = 4;
+						c.setEnergie(c.getEnergie()-c.getVitesse()+c.getVITESSE_CROISIERE()-energierelief);
 						c.avancer(SECOND_PER_TICK);
 						int km=(int)c.getPosition();
 						int m = (int)((c.getPosition()-(int)c.getPosition())*1000.0);
 						System.out.println(team.getValue().getName()+"\t"+km+"km"+m+"\tEnergie:"+c.getEnergie()+"\tVitesse:"+c.getVitesse() +"\tTick:"+getTickCount());
+						
 						
 						//Get time of the run
 						if(c.getPosition()>=circuit.length){
@@ -253,7 +249,7 @@ public class RaceWorld extends Agent{
 				}
 			}
 			System.out.println(team+"\t"+min/3600+"h"+min%3600/60+"m"+min%3600%60+"s");
-			System.out.println(team+"\t"+min);
+			//System.out.println(team+"\t"+min);
 			podium.get(team).remove((Integer)min);	
 			team = null;
 		}

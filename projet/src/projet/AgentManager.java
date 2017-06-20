@@ -32,7 +32,6 @@ public class AgentManager extends Agent {
 		System.out.println("Manager Ready:"+this.getAID());
 		addBehaviour(new subscribeBehaviour());
 		addBehaviour(new acceptTeam());
-		//addBehaviour(new ManageTeamBehaviour());
 
 	}
 	private class subscribeBehaviour extends OneShotBehaviour{
@@ -109,17 +108,16 @@ public class AgentManager extends Agent {
 			for(Coureur c:team.getCoureurs()){
 				int vitesse = 0;
 				if(c.getVitesse()==0)
-					vitesse=40;
+					vitesse=c.getVITESSE_CROISIERE();
 				else
 					vitesse=c.getVitesse();
 				if(c.getEnergie()<50){
 					c.manger();
 				}
 				vitesse+=c.getEnergie()-50/10;
-				if(vitesse>50)
-					vitesse=50;
 				vitesse+=penteMoyenne((int)c.getPosition())*-1;
 				c.setVitesse(vitesse);
+
 			}
 			ACLMessage message = new ACLMessage(ACLMessage.INFORM);
 			message.setContent(team.toJSON());
