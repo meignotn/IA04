@@ -8,7 +8,9 @@ import java.util.Random;
 
 import org.json.JSONObject;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jade.core.AID;
 import jade.core.Agent;
@@ -24,10 +26,7 @@ import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
 import model.Coureur;
 import model.Team;
-import projet.AgentManager.ManageRaceBehaviour;
-import projet.AgentManager.TeamIsReadyBehaviour;
-import projet.AgentManager.WaitForStartBehaviour;
-import projet.AgentManager.WaitRunnersBehaviour;
+
 
 @SuppressWarnings("serial")
 public class RaceWorld extends Agent{
@@ -97,6 +96,7 @@ public class RaceWorld extends Agent{
 
 		WaitAndStardBehaviour(){
 			addSubBehaviour(new ReceiveSubcriptionBehaviour());
+			addSubBehaviour(new SendCircuitBehaviour());
 			addSubBehaviour(new StartRaceBehaviour());
 			addBehaviour(new NextStep(getAgent(),500));
 		}
@@ -116,10 +116,10 @@ public class RaceWorld extends Agent{
 				//if(message.getContent().equals("TeamReady")){
 				teamsReady++;
 				teamAIDList.add(message.getSender());
-				System.out.println("MESSAGE =>>>" + message.getContent());
+				//System.out.println("MESSAGE =>>>" + message.getContent());
 				
 				team.coureurs = Coureur.readAllRunners(message.getContent());
-				
+				team.name = message.getSender().getName();
 				teams.put(message.getSender(), team);
 				
 				System.out.println("Team" + teamsReady + "SUSCRIBED");
@@ -155,6 +155,34 @@ public class RaceWorld extends Agent{
 			// TODO Auto-generated method stub
 			return false;
 		}
+	}
+	
+	private class SendCircuitBehaviour extends OneShotBehaviour {
+		@Override
+		public void action() {
+			System.out.println("SEND CIRCUIT");
+			ACLMessage aclMessage =new ACLMessage(ACLMessage.AGREE);
+			for(Entry<AID,Team> team : teams.entrySet()){
+				for(Coureur c: team.getValue().getCoureurs()){
+					ObjectMapper mapper = new ObjectMapper();
+					String jsonObj = null;
+					//Object to JSON in String
+					try {
+						jsonObj = mapper.writeValueAsString(circuit);
+					} catch (JsonProcessingException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					AID aidReceiver =getReceiver(c.id, "AgentCoureur");
+					aclMessage.addReceiver(aidReceiver);
+					aclMessage.setContent(jsonObj);
+					send(aclMessage);
+
+				}
+				
+			}
+		}
+		
 	}
 	
 	/*private class ReceiveSubcriptionBehaviour extends Behaviour {
@@ -215,10 +243,10 @@ public class RaceWorld extends Agent{
 		if(!isStarted)
 			return false;
 		for(Team t : teams.values()){
-			System.out.println("TEAM" + t.name);
+			System.out.println("TEAM===>" + t.name);
 			for(Coureur c:t.getCoureurs())
 				if(c.getPosition() < circuit.length){
-					System.out.println("POSITION" + c.getPosition());
+					//System.out.println("COUREUR = " + c.id + " AT POSITION===>" + c.getPosition());
 					return false;
 				}
 					
@@ -264,16 +292,14 @@ public class RaceWorld extends Agent{
 		@Override
 		protected void onTick() {
 			for(Entry<AID,Team> team : teams.entrySet()){
-				System.out.println("TEAMMMMM=>>>>" + team.toString());
 				for(Coureur c: team.getValue().getCoureurs()){
 					
-					ACLMessage aclMessage =new ACLMessage(ACLMessage.INFORM);
+					ACLMessage aclMessage =new ACLMessage(ACLMessage.CONFIRM);
 					AID aidReceiver =getReceiver(c.id, "AgentCoureur");
-					System.out.println("COUREUR=>>>>" + c.id);
-					System.out.println("AID=>>>>" + aidReceiver);
 					aclMessage.addReceiver(aidReceiver);
-					aclMessage.setContent("tick");
+					aclMessage.setContent(String.valueOf(getTickCount()));
 					send(aclMessage);
+				
 				}
 				
 			}
@@ -354,5 +380,7 @@ public class RaceWorld extends Agent{
 		}
 		return rec;
 	}
+	
+
 	
 }

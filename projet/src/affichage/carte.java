@@ -37,7 +37,7 @@ public class carte extends Agent {
 		@Override
 		public void action() {
 			MessageTemplate mt = MessageTemplate
-					.MatchPerformative(ACLMessage.REQUEST);
+					.MatchPerformative(ACLMessage.INFORM);
 			ACLMessage message = myAgent.receive(mt);
 			if (message != null) {
 				System.out.println(myAgent.getLocalName() + "--> "

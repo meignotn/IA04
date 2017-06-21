@@ -52,7 +52,7 @@ public class Coureur implements Serializable{
 		position = 0;
 		energie = 100;
 		stockNourriture = 10;
-		vitesse = 0;
+		vitesse = VITESSE_CROISIERE;
 		leader = false;
 	}
 	

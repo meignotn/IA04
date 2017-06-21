@@ -179,7 +179,7 @@ public class AgentManager extends Agent {
 				if (message.getContent().equals("racestarted")) {
 					raceStarted = true;
 					for(int i = 0; i < runnersAID.size(); i++){
-						System.out.println("ON INFORME " + runnersAID.get(i));
+						//System.out.println("ON INFORME " + runnersAID.get(i));
 						ACLMessage aclMessage =new ACLMessage(ACLMessage.INFORM);
 						AID aidReceiver = runnersAID.get(i);
 						aclMessage.addReceiver(aidReceiver);
