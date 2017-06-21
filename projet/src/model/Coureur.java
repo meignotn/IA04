@@ -1,19 +1,27 @@
 package model;
 
 import java.io.IOException;
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Random;
 
+import org.json.JSONArray;
+
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jade.core.AID;
 import projet.RaceWorld;
 
-public class Coureur{
+public class Coureur implements Serializable{
 	int energie;
 	int stockNourriture;
 	char type;
 	int vitesse;
+	public String id;
+	public boolean isRunning = false;
 	public float position;
 	public boolean leader = false;
 	public int MAX_STOCK_NOURRITURE=5;
@@ -45,6 +53,7 @@ public class Coureur{
 		energie = 100;
 		stockNourriture = 10;
 		vitesse = 0;
+		leader = false;
 	}
 	
 	public int getMAX_STOCK_NOURRITURE() {
@@ -141,6 +150,26 @@ public class Coureur{
 			e.printStackTrace();
 		}
 		return p;
+	}
+	
+	public static ArrayList<Coureur> readAllRunners(String jsonString) {
+		ObjectMapper mapper = new ObjectMapper();
+		ArrayList<Coureur> list = new ArrayList<Coureur>();
+		Coureur p = null;
+		TypeReference<ArrayList<Coureur>> mapType = new TypeReference<ArrayList<Coureur>>() {};
+		try {
+			list = mapper.readValue(jsonString,mapType);
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (JsonMappingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return list;
 	}
 
 	

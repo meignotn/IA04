@@ -1,36 +1,46 @@
 package projet;
 
 import java.util.ArrayList;
-import java.util.Currency;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 
 import org.json.JSONObject;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import jade.core.AID;
 import jade.core.Agent;
 import jade.core.behaviours.Behaviour;
 import jade.core.behaviours.OneShotBehaviour;
+import jade.core.behaviours.SequentialBehaviour;
 import jade.core.behaviours.TickerBehaviour;
+import jade.domain.DFService;
+import jade.domain.FIPAException;
+import jade.domain.FIPAAgentManagement.DFAgentDescription;
+import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
-import jade.wrapper.AgentController;
 import model.Coureur;
 import model.Team;
+import projet.AgentManager.ManageRaceBehaviour;
+import projet.AgentManager.TeamIsReadyBehaviour;
+import projet.AgentManager.WaitForStartBehaviour;
+import projet.AgentManager.WaitRunnersBehaviour;
 
 @SuppressWarnings("serial")
 public class RaceWorld extends Agent{
-	private final int TEAMS_NUMBER = 3;
-	private final int RUNNERS_PER_TEAM = 3;
-	private final int SECOND_PER_TICK=600;
+	private final int TEAMS_NUMBER = 2;
+	private final int RUNNERS_PER_TEAM = 10;
+	private final long SECOND_PER_TICK=600;
 	public static int dossard=1;
 	int circuit[];
 	Map<AID,Team> teams = new HashMap<AID,Team>();
 	ArrayList<Team> teamList = new ArrayList<Team>();
+	ArrayList<AID> teamAIDList = new ArrayList<AID>();
 	Map<String,ArrayList<Integer>> podium = new HashMap();
+	boolean isStarted = false;
 	boolean end;
 	int teamsReady = 0;
 	int ravitaillement;
@@ -53,13 +63,13 @@ public class RaceWorld extends Agent{
 		System.out.println("Race:"+circuit.length);
 		System.out.println("Supplies:"+ravitaillement);
 
-		for(int i=0;i<TEAMS_NUMBER;i++){
+		/*for(int i=0;i<TEAMS_NUMBER;i++){
 			Team team = new Team("Team"+i);
 			for(int j=0;j<RUNNERS_PER_TEAM;j++){
 				team.coureurs.add(new Coureur());
 			}
 			teamList.add(team);
-		}
+		}*/
 		for(int i=0;i<circuit.length;i++){
 			System.out.print(circuit[i]+" ");
 		}
@@ -68,18 +78,86 @@ public class RaceWorld extends Agent{
 	
 	
 	protected void setup(){
-		
+		dfRegister("WORLD", "RaceWorld");
 		System.out.println(getLocalName()+" created");
-		for(int i=0;i<TEAMS_NUMBER;i++){
+		/*for(int i=0;i<TEAMS_NUMBER;i++){
 			try{
 				AgentController ac = getContainerController().createNewAgent("MAN"+i, "projet.AgentManager", null);
 				ac.start();
 			}catch(Exception e){System.out.println(e.getMessage());}
-		}
-		addBehaviour(new ReceiveSubcriptionBehaviour());
+		}*/
+		addBehaviour(new WaitAndStardBehaviour());
 	}	
 	
+	public class WaitAndStardBehaviour extends SequentialBehaviour{
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+
+		WaitAndStardBehaviour(){
+			addSubBehaviour(new ReceiveSubcriptionBehaviour());
+			addSubBehaviour(new StartRaceBehaviour());
+			addBehaviour(new NextStep(getAgent(),500));
+		}
+	}
+	
+	
 	private class ReceiveSubcriptionBehaviour extends Behaviour {
+		@Override
+		public void action() {
+			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.SUBSCRIBE);
+			ACLMessage message = receive(mt);
+
+			Team team = new Team();
+			if (message != null) {
+				//System.out.println("AID baba" + message.getSender());
+				//System.out.println("CONTENT" + message.getContent());
+				//if(message.getContent().equals("TeamReady")){
+				teamsReady++;
+				teamAIDList.add(message.getSender());
+				System.out.println("MESSAGE =>>>" + message.getContent());
+				
+				team.coureurs = Coureur.readAllRunners(message.getContent());
+				
+				teams.put(message.getSender(), team);
+				
+				System.out.println("Team" + teamsReady + "SUSCRIBED");
+				//}
+					
+
+			} else
+				block();
+		}
+		
+		@Override
+		public boolean done() {
+			// TODO Auto-generated method stub
+			return teamsReady == TEAMS_NUMBER;
+		}
+	}
+	
+	private class StartRaceBehaviour extends Behaviour {
+		@Override
+		public void action() {
+			//System.out.println("RACE STARTED");
+			isStarted =  true;
+			ACLMessage aclMessage =new ACLMessage(ACLMessage.INFORM);
+			for(int i = 0; i < teamAIDList.size(); i++){
+				aclMessage.addReceiver(teamAIDList.get(i));
+				aclMessage.setContent("racestarted");
+				send(aclMessage);
+			}
+		}
+		
+		@Override
+		public boolean done() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+	}
+	
+	/*private class ReceiveSubcriptionBehaviour extends Behaviour {
 		
 		@Override
 		public void action() {
@@ -115,7 +193,7 @@ public class RaceWorld extends Agent{
 			addBehaviour(new nextStep(getAgent(),500));
 			return super.onEnd();
 		}
-	}
+	}*/
 	
 	private class askManager extends OneShotBehaviour {
 		AID manager;
@@ -134,10 +212,16 @@ public class RaceWorld extends Agent{
 		}
 	}
 	public boolean isFinished(){
+		if(!isStarted)
+			return false;
 		for(Team t : teams.values()){
+			System.out.println("TEAM" + t.name);
 			for(Coureur c:t.getCoureurs())
-				if(c.getPosition() < circuit.length)
+				if(c.getPosition() < circuit.length){
+					System.out.println("POSITION" + c.getPosition());
 					return false;
+				}
+					
 		}
 		System.out.println("Race is over");
 		return true;
@@ -171,40 +255,25 @@ public class RaceWorld extends Agent{
 		}
 	}
 	
-	private class nextStep extends TickerBehaviour{
+	private class NextStep extends TickerBehaviour{
 		
-		public nextStep(Agent a, long period) {
+		public NextStep(Agent a, long period) {
 			super(a, period);
 		}
 
 		@Override
 		protected void onTick() {
 			for(Entry<AID,Team> team : teams.entrySet()){
+				System.out.println("TEAMMMMM=>>>>" + team.toString());
 				for(Coureur c: team.getValue().getCoureurs()){
-					if(c.getVitesse()!=0 && c.getPosition()<circuit.length){
-						int tmp_vitesse = c.getVitesse();
-						float tmp_position = c.getPosition();
-						int energierelief = penteMoyenne((int)c.getPosition(), (int)(c.getPosition()+c.getVitesse()*5.0/60.0));
-						// Les grimpeurs s'epuisent moins dans les montées
-						if(c.getType()=='g')
-							if(energierelief>4)
-								energierelief = 4;
-						c.setEnergie(c.getEnergie()-c.getVitesse()+c.getVITESSE_CROISIERE()-energierelief);
-						c.avancer(SECOND_PER_TICK);
-						int km=(int)c.getPosition();
-						int m = (int)((c.getPosition()-(int)c.getPosition())*1000.0);
-						System.out.println(team.getValue().getName()+"\t"+km+"km"+m+"\tEnergie:"+c.getEnergie()+"\tVitesse:"+c.getVitesse() +"\tTick:"+getTickCount());
-						
-						
-						//Get time of the run
-						if(c.getPosition()>=circuit.length){
-							int time = (getTickCount()-1) * SECOND_PER_TICK ;
-							float distance = circuit.length-tmp_position;
-							time = (int)(time + distance*3600.0/tmp_vitesse);
-							podium.get(team.getValue().getName()).add(time);
-							System.out.println("A runner of "+team.getValue().getName()+"finished in "+time+"s");
-						}
-					}
+					
+					ACLMessage aclMessage =new ACLMessage(ACLMessage.INFORM);
+					AID aidReceiver =getReceiver(c.id, "AgentCoureur");
+					System.out.println("COUREUR=>>>>" + c.id);
+					System.out.println("AID=>>>>" + aidReceiver);
+					aclMessage.addReceiver(aidReceiver);
+					aclMessage.setContent("tick");
+					send(aclMessage);
 				}
 				
 			}
@@ -233,7 +302,6 @@ public class RaceWorld extends Agent{
 	public void affClassement(){
 		int min=0;
 		String team = null;
-		String s= "";
 		System.out.println("Individual Ranking");
 		for(int k=0;k<TEAMS_NUMBER*RUNNERS_PER_TEAM;k++){
 			for(Entry<String, ArrayList<Integer>> e:podium.entrySet()){
@@ -254,6 +322,37 @@ public class RaceWorld extends Agent{
 			team = null;
 		}
 		
+	}
+	
+	public void dfRegister(String type, String name) {
+		DFAgentDescription dagent = new DFAgentDescription();
+		dagent.setName(getAID());
+		ServiceDescription sd = new ServiceDescription();
+		sd.setType(type);
+		sd.setName(name);
+		dagent.addServices(sd);
+		try {
+			DFService.register(this, dagent);
+		} catch (FIPAException fe) {
+			fe.printStackTrace();
+		}
+	}
+	
+	private AID getReceiver(String type, String name) {
+		AID rec = null;
+		DFAgentDescription template = new DFAgentDescription();
+		ServiceDescription sd = new ServiceDescription();
+		sd.setType(type);
+		sd.setName(name);
+		template.addServices(sd);
+		try {
+			DFAgentDescription[] result = DFService.search(this, template);
+			if (result.length > 0)
+				rec = result[0].getName();
+		} catch (FIPAException fe) {
+			fe.printStackTrace();
+		}
+		return rec;
 	}
 	
 }
