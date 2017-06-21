@@ -90,12 +90,10 @@ public class AgentCoureur extends Agent{
 			ACLMessage message = myAgent.receive(mt);
 			if (message != null) {
 				
-					System.out.println("GET CIRCUIT");
 					ObjectMapper mapper = new ObjectMapper();
 					
 					try {
 						circuit = mapper.readValue(message.getContent(), int[].class);
-						System.out.println("THE CIRCUIT ======" + circuit[0] + circuit[1] + circuit[2]);
 					} catch (JsonParseException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
@@ -133,10 +131,7 @@ public class AgentCoureur extends Agent{
 			if (message != null) {
 				//if (message.getContent().equals("tick")) {
 				int tickCount = Integer.parseInt(message.getContent());
-				System.out.println("TICKKKK ======" + tickCount);
-				System.out.println("MY POSITION ======" +c.getPosition());
 					if(circuit != null && c.getVitesse()!=0 && c.getPosition()<circuit.length){
-						System.out.println("==================================================");
 						int tmp_vitesse = c.getVitesse();
 						float tmp_position = c.getPosition();
 						int energierelief = penteMoyenne((int)c.getPosition(), (int)(c.getPosition()+c.getVitesse()*5.0/60.0));
@@ -161,14 +156,21 @@ public class AgentCoureur extends Agent{
 						
 						//Get time of the run
 						if(c.getPosition()>=circuit.length){
+							c.isRunning = false;
 							int time = (tickCount-1) * SECOND_PER_TICK ;
 							float distance = circuit.length-tmp_position;
 							time = (int)(time + distance*3600.0/tmp_vitesse);
 							//podium.get(team.getValue().getName()).add(time);
 							System.out.println("A runner "+c.id+" finished in "+time+"s");
+							
+							aclMessage =new ACLMessage(ACLMessage.CONFIRM);
+							aidReceiver =getReceiver("WORLD", "RaceWOrld");
+							aclMessage.addReceiver(aidReceiver);
+							aclMessage.setContent(String.valueOf(c.id) + "," +  time);
+							send(aclMessage);
 						}
 					}
-					System.out.println("COUREUR = " + c.id + " AT POSITION===>" + c.getPosition());
+					//System.out.println("COUREUR = " + c.id + " AT POSITION===>" + c.getPosition());
 					//System.out.println("RUNNER" + c.id + "RECEIVE TICKS");	
 				
 			} else

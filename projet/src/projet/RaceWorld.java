@@ -24,6 +24,7 @@ import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
+
 import model.Coureur;
 import model.Team;
 
@@ -43,6 +44,9 @@ public class RaceWorld extends Agent{
 	boolean end;
 	int teamsReady = 0;
 	int ravitaillement;
+	int cptPodium = 1;
+	ArrayList<Pair<String,Integer>> podiumList = new ArrayList<Pair<String,Integer>>();
+	ArrayList<String>arrivedRunners = new ArrayList<String>();
 	
 	public RaceWorld(){
 		end=false;
@@ -86,6 +90,7 @@ public class RaceWorld extends Agent{
 			}catch(Exception e){System.out.println(e.getMessage());}
 		}*/
 		addBehaviour(new WaitAndStardBehaviour());
+		addBehaviour(new GetRankingBehaviour());
 	}	
 	
 	public class WaitAndStardBehaviour extends SequentialBehaviour{
@@ -185,6 +190,39 @@ public class RaceWorld extends Agent{
 		
 	}
 	
+	private class GetRankingBehaviour extends Behaviour {
+		
+		@Override
+		public void action() {
+			MessageTemplate mt = MessageTemplate.MatchPerformative(ACLMessage.CONFIRM);
+			ACLMessage message = receive(mt);
+			
+			if (message != null) {
+				//System.out.println("AID baba" + message.getSender());
+				String nameCoureur = message.getContent().split(",")[0];
+				int time = Integer.parseInt(message.getContent().split(",")[1]);
+				podiumList.add(new Pair(nameCoureur, time));
+				//System.out.println("ARRIVE EN " + cptPodium + "=====>>>>" + nameCoureur);
+				arrivedRunners.add(nameCoureur);
+				cptPodium++;
+			} else
+				block();
+		}
+		
+		@Override
+		public boolean done() {
+			// TODO Auto-generated method stub
+			return isFinished();
+		}
+		public int onEnd(){
+			System.out.println("PODIUM ==================");
+			for(int i = 0; i < podiumList.size(); i++){
+				System.out.println("ARRIVE EN " + (i+1) + "=====>>>>" + podiumList.get(i));
+			}
+			return super.onEnd();
+		}
+	}
+	
 	/*private class ReceiveSubcriptionBehaviour extends Behaviour {
 		
 		@Override
@@ -240,19 +278,14 @@ public class RaceWorld extends Agent{
 		}
 	}
 	public boolean isFinished(){
+		System.out.println("DEJA ARRIVVES" + arrivedRunners.size());
 		if(!isStarted)
 			return false;
-		for(Team t : teams.values()){
-			System.out.println("TEAM===>" + t.name);
-			for(Coureur c:t.getCoureurs())
-				if(c.getPosition() < circuit.length){
-					//System.out.println("COUREUR = " + c.id + " AT POSITION===>" + c.getPosition());
-					return false;
-				}
-					
+		if(arrivedRunners.size() == RUNNERS_PER_TEAM * TEAMS_NUMBER){
+			System.out.println("Race is over");
+			return true;
 		}
-		System.out.println("Race is over");
-		return true;
+		return false;
 	}
 	
 	private class updateTeam extends Behaviour {
@@ -305,7 +338,7 @@ public class RaceWorld extends Agent{
 			}
 			if(isFinished()){
 				this.stop();
-				affClassement();
+				//affClassement();
 			}else{
 				for(Entry<AID,Team> team : teams.entrySet()){
 					addBehaviour(new askManager(team.getKey(), team.getValue()));
@@ -381,6 +414,18 @@ public class RaceWorld extends Agent{
 		return rec;
 	}
 	
+	public class Pair<L,R> {
+	    private L l;
+	    private R r;
+	    public Pair(L l, R r){
+	        this.l = l;
+	        this.r = r;
+	    }
+	    public L getL(){ return l; }
+	    public R getR(){ return r; }
+	    public void setL(L l){ this.l = l; }
+	    public void setR(R r){ this.r = r; }
+	}
 
 	
 }
